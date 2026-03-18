@@ -1,9 +1,19 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Question } from "@/data/questions";
+import { motion } from "framer-motion";
+
+interface ShuffledQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  category: string;
+  explanation?: string;
+  shuffledOptions: string[];
+  shuffledCorrectIndex: number;
+}
 
 interface FlashCardProps {
-  question: Question;
+  question: ShuffledQuestion;
   onNext: () => void;
   onPrev: () => void;
   index: number;
@@ -17,8 +27,8 @@ export default function FlashCard({ question, onNext, onPrev, index, total }: Fl
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div 
-        className="w-full perspective-[1200px] cursor-pointer" 
+      <div
+        className="w-full perspective-[1200px] cursor-pointer"
         onClick={handleFlip}
         style={{ minHeight: 380 }}
       >
@@ -29,7 +39,7 @@ export default function FlashCard({ question, onNext, onPrev, index, total }: Fl
           transition={{ type: "spring", stiffness: 260, damping: 20 }}
         >
           {/* Front */}
-          <div 
+          <div
             className="absolute inset-0 card-surface p-8 flex flex-col justify-center items-center text-center backface-hidden"
             style={{ backfaceVisibility: "hidden" }}
           >
@@ -41,7 +51,7 @@ export default function FlashCard({ question, onNext, onPrev, index, total }: Fl
           </div>
 
           {/* Back */}
-          <div 
+          <div
             className="absolute inset-0 card-surface p-8 flex flex-col justify-center items-center text-center"
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
@@ -51,11 +61,11 @@ export default function FlashCard({ question, onNext, onPrev, index, total }: Fl
             </h2>
             <div className="space-y-2 mt-4 w-full">
               {question.options.map((opt, i) => (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={`p-3 card-inner text-sm ${
-                    i === question.correctIndex 
-                      ? "bg-primary/10 text-primary font-semibold" 
+                    i === question.correctIndex
+                      ? "bg-primary/10 text-primary font-semibold"
                       : "bg-secondary text-muted-foreground"
                   }`}
                 >

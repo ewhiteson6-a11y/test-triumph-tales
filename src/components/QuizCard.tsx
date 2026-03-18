@@ -1,13 +1,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Question } from "@/data/questions";
+
+interface ShuffledQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  category: string;
+  explanation?: string;
+  shuffledOptions: string[];
+  shuffledCorrectIndex: number;
+}
 
 interface QuizCardProps {
-  question: Question;
+  question: ShuffledQuestion;
   selectedAnswer: number | null;
   onAnswer: (index: number) => void;
   onNext: () => void;
   direction: number;
+  streak: number;
 }
 
 const cardVariants = {
@@ -32,19 +43,30 @@ const cardVariants = {
   }),
 };
 
-export default function QuizCard({ question, selectedAnswer, onAnswer, onNext, direction }: QuizCardProps) {
+const streakMessages = [
+  "", "", "Nice! 🔥", "On fire! 🔥🔥", "Unstoppable! 🔥🔥🔥",
+  "LEGENDARY! 💥", "GODLIKE! ⚡", "INSANE! 🌟",
+];
+
+export default function QuizCard({ question, selectedAnswer, onAnswer, onNext, direction, streak }: QuizCardProps) {
   const [shaking, setShaking] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const answered = selectedAnswer !== null;
-  const isCorrect = selectedAnswer === question.correctIndex;
+  const isCorrect = selectedAnswer === question.shuffledCorrectIndex;
 
   const handleSelect = (index: number) => {
     if (answered) return;
     onAnswer(index);
-    if (index !== question.correctIndex) {
+    if (index !== question.shuffledCorrectIndex) {
       setShaking(true);
       setTimeout(() => setShaking(false), 400);
+    } else {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 1200);
     }
   };
+
+  const streakMsg = streakMessages[Math.min(streak, streakMessages.length - 1)];
 
   return (
     <AnimatePresence mode="wait" custom={direction}>
@@ -57,21 +79,33 @@ export default function QuizCard({ question, selectedAnswer, onAnswer, onNext, d
         exit="exit"
         className={`card-surface p-6 min-h-[420px] flex flex-col ${shaking ? "animate-shake" : ""}`}
       >
-        {/* Category chip */}
-        <span className="text-meta text-xs font-medium bg-secondary px-3 py-1 rounded-full self-start mb-4">
-          {question.category}
-        </span>
+        {/* Category chip + streak */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-meta text-xs font-medium bg-secondary px-3 py-1 rounded-full">
+            {question.category}
+          </span>
+          {streakMsg && (
+            <motion.span
+              className="text-xs font-bold text-primary"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              {streakMsg}
+            </motion.span>
+          )}
+        </div>
 
         {/* Question */}
         <h2 className="text-display text-foreground mb-8 flex-grow flex items-center">
           {question.question}
         </h2>
 
-        {/* Options */}
+        {/* Options — uses shuffled */}
         <div className="space-y-3">
-          {question.options.map((option, i) => {
+          {question.shuffledOptions.map((option, i) => {
             const isSelected = selectedAnswer === i;
-            const isCorrectOption = i === question.correctIndex;
+            const isCorrectOption = i === question.shuffledCorrectIndex;
             
             let optionStyle = "bg-secondary text-foreground";
             if (answered) {
@@ -102,6 +136,29 @@ export default function QuizCard({ question, selectedAnswer, onAnswer, onNext, d
             );
           })}
         </div>
+
+        {/* Correct answer feedback */}
+        {answered && !isCorrect && (
+          <motion.div
+            className="mt-4 p-3 rounded-xl bg-primary/10 text-sm text-foreground"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            ✅ Correct answer: <strong>{question.shuffledOptions[question.shuffledCorrectIndex]}</strong>
+          </motion.div>
+        )}
+
+        {/* Confetti burst */}
+        {showConfetti && (
+          <motion.div
+            className="absolute inset-0 pointer-events-none flex items-center justify-center text-5xl"
+            initial={{ scale: 0, opacity: 1 }}
+            animate={{ scale: 2, opacity: 0 }}
+            transition={{ duration: 1 }}
+          >
+            ✨
+          </motion.div>
+        )}
 
         {/* Next button */}
         {answered && (
